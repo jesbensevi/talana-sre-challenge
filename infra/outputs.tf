@@ -42,3 +42,46 @@ output "gke_connection_command" {
   description = "Comando para conectarse al cluster con kubectl"
   value       = "gcloud container clusters get-credentials ${google_container_cluster.primary.name} --zone ${var.zone} --project ${var.project_id}"
 }
+
+# -----------------------------------------------------------------------------
+# Cloud SQL Outputs
+# -----------------------------------------------------------------------------
+
+output "db_instance_name" {
+  description = "Nombre de la instancia de Cloud SQL"
+  value       = google_sql_database_instance.main.name
+}
+
+output "db_private_ip" {
+  description = "IP privada de Cloud SQL"
+  value       = google_sql_database_instance.main.private_ip_address
+}
+
+output "db_connection_name" {
+  description = "Connection name para Cloud SQL Proxy"
+  value       = google_sql_database_instance.main.connection_name
+}
+
+output "db_name" {
+  description = "Nombre de la base de datos"
+  value       = google_sql_database.main.name
+}
+
+output "db_user" {
+  description = "Usuario de la base de datos"
+  value       = google_sql_user.app.name
+}
+
+# -----------------------------------------------------------------------------
+# Secret Manager Outputs
+# -----------------------------------------------------------------------------
+
+output "secret_db_password_id" {
+  description = "ID del secreto con la contraseña de DB"
+  value       = google_secret_manager_secret.db_password.secret_id
+}
+
+output "secret_db_connection_id" {
+  description = "ID del secreto con el connection string"
+  value       = google_secret_manager_secret.db_connection.secret_id
+}

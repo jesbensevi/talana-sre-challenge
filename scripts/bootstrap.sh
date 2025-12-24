@@ -150,6 +150,7 @@ APIS=(
     "compute.googleapis.com"
     "servicenetworking.googleapis.com"
     "artifactregistry.googleapis.com"
+    "secretmanager.googleapis.com"
 )
 
 for api in "${APIS[@]}"; do
@@ -202,6 +203,7 @@ log_info "Assigning roles to Service Account..."
 ROLES=(
     "roles/editor"
     "roles/iam.serviceAccountTokenCreator"
+    "roles/servicenetworking.networksAdmin"
 )
 
 for role in "${ROLES[@]}"; do

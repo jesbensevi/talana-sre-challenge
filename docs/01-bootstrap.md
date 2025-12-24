@@ -126,3 +126,49 @@ cd infra
 terraform init
 terraform plan
 ```
+
+## (Opcional) Conectarse al Cluster GKE
+
+Si deseas conectarte al cluster GKE desde tu terminal local, necesitas instalar el plugin de autenticación:
+
+### 1. Instalar el plugin
+
+```bash
+gcloud components install gke-gcloud-auth-plugin
+```
+
+### 2. Configurar la variable de entorno
+
+Agregar a tu `~/.zshrc` o `~/.bashrc`:
+
+```bash
+export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+```
+
+Luego recargar:
+
+```bash
+source ~/.zshrc  # o source ~/.bashrc
+```
+
+### 3. Obtener credenciales del cluster
+
+```bash
+gcloud container clusters get-credentials talana-gke-cluster \
+    --zone us-east1-b \
+    --project talana-sre-challenge-jesben
+```
+
+### 4. Verificar conexión
+
+```bash
+kubectl get nodes
+```
+
+Deberías ver los nodos del cluster:
+
+```
+NAME                                              STATUS   ROLES    AGE   VERSION
+gke-talana-gke-cluster-talana-node-pool-xxxxx     Ready    <none>   Xm    v1.xx.x
+gke-talana-gke-cluster-talana-node-pool-xxxxx     Ready    <none>   Xm    v1.xx.x
+```
