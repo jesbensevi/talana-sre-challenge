@@ -85,3 +85,22 @@ output "secret_db_connection_id" {
   description = "ID del secreto con el connection string"
   value       = google_secret_manager_secret.db_connection.secret_id
 }
+
+# -----------------------------------------------------------------------------
+# ArgoCD Outputs
+# -----------------------------------------------------------------------------
+
+output "argocd_namespace" {
+  description = "Namespace donde esta instalado ArgoCD"
+  value       = kubernetes_namespace.argocd.metadata[0].name
+}
+
+output "argocd_server_url" {
+  description = "URL del servidor ArgoCD"
+  value       = "http://${try(data.kubernetes_service.argocd_server.status[0].load_balancer[0].ingress[0].ip, "pending")}"
+}
+
+output "argocd_initial_admin_password_command" {
+  description = "Comando para obtener la contrasena inicial de admin"
+  value       = "kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
+}
