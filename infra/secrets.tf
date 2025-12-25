@@ -3,7 +3,9 @@
 resource "google_secret_manager_secret" "db_connection" {
   secret_id = "talana-db-connection"
   project   = var.project_id
-  replication { auto {} }
+  replication { 
+    auto {} 
+    }
 }
 
 resource "google_secret_manager_secret_version" "db_connection" {
