@@ -208,6 +208,7 @@ ROLES=(
     "roles/secretmanager.admin"
     "roles/container.admin"
     "roles/artifactregistry.admin"
+    "roles/resourcemanager.projectIamAdmin"
 )
 
 for role in "${ROLES[@]}"; do
