@@ -108,3 +108,16 @@ output "external_secrets_gsa_email" {
   description = "Email de la Service Account de External Secrets"
   value       = google_service_account.external_secrets.email
 }
+
+# -----------------------------------------------------------------------------
+# Artifact Registry Outputs
+# -----------------------------------------------------------------------------
+output "artifact_registry_url" {
+  description = "URL del Artifact Registry"
+  value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.talana.repository_id}"
+}
+
+output "artifact_registry_image" {
+  description = "Full image path para talana-backend"
+  value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.talana.repository_id}/talana-backend"
+}
