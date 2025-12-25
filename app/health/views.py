@@ -13,8 +13,8 @@ def index(request):
         'version': '1.0.0',
         'endpoints': {
             '/': 'API info',
-            '/healthcheck': 'Liveness probe',
-            '/db-check': 'Database connectivity check',
+            '/health': 'Liveness probe',
+            '/ready': 'Readiness probe (database check)',
         }
     })
 
