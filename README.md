@@ -28,16 +28,11 @@ graph TD
             subgraph GKE ["GKE Cluster (Privado)"]
                 style GKE fill:#fff,stroke:#326ce5
 
-                subgraph Node1 ["Nodo Worker 1"]
+                subgraph Node1 ["Nodo Worker"]
                     class Node1 node
-                    Kong1("Kong Proxy (Replica)"):::pod
-                    AppBlue1("Django Blue (Pod)"):::pod
-                end
-
-                subgraph Node2 ["Nodo Worker 2"]
-                    class Node2 node
-                    Kong2("Kong Proxy (Replica)"):::pod
-                    AppBlue2("Django Blue (Pod)"):::pod
+                    Kong1("Kong Proxy"):::pod
+                    AppBlue1("Django (Pod 1)"):::pod
+                    AppBlue2("Django (Pod 2)"):::pod
                 end
             end
 
@@ -48,13 +43,10 @@ graph TD
     end
 
     User -->|HTTPS| LB
-    LB -->|TCP Distribuido| Kong1
-    LB -->|TCP Distribuido| Kong2
+    LB -->|TCP| Kong1
 
     Kong1 -->|Internal Routing| AppBlue1
     Kong1 -->|Internal Routing| AppBlue2
-    Kong2 -->|Internal Routing| AppBlue1
-    Kong2 -->|Internal Routing| AppBlue2
 
     AppBlue1 -->|Private Access :5432| SQL
     AppBlue2 -->|Private Access :5432| SQL
@@ -62,7 +54,6 @@ graph TD
     GH_Actions -.->|1. Auth OIDC| WIF
     GH_Actions -.->|2. Deploy K8s| GKE
     Node1 -.->|Pull Image/Updates| NAT
-    Node2 -.->|Pull Image/Updates| NAT
 ```
 
 ## Stack Tecnologico
@@ -74,6 +65,7 @@ graph TD
 | Container Orchestration | GKE (Google Kubernetes Engine) |
 | GitOps | ArgoCD |
 | CI/CD | GitHub Actions + Workload Identity Federation |
+| API Gateway | Kong Ingress Controller |
 | Secrets | External Secrets Operator + GCP Secret Manager |
 | Base de Datos | Cloud SQL PostgreSQL 15 |
 | Aplicacion | Django 5.0 + Gunicorn |
@@ -104,11 +96,12 @@ talana-sre-challenge/
 ├── k8s/                      # Manifiestos Kubernetes (Kustomize)
 │   ├── apps/
 │   │   └── talana-backend/
-│   │       ├── base/
+│   │       ├── base/         # deployment, service, ingress, kong-plugins
 │   │       └── overlays/dev/
 │   ├── infra/
-│   │   └── external-secrets/
-│   └── argocd/
+│   │   ├── external-secrets/
+│   │   └── cluster-secret-store/
+│   └── argocd/               # ArgoCD Applications (kong, infra, backend)
 ├── scripts/
 │   └── bootstrap.sh          # Script de setup inicial
 └── docs/
@@ -215,8 +208,33 @@ Este paso registra las aplicaciones en ArgoCD para que comience el despliegue Gi
 | Endpoint | Descripcion |
 |----------|-------------|
 | `/` | Info del API |
-| `/healthcheck` | Liveness probe |
-| `/db-check` | Readiness probe + conexion BD |
+| `/api/*` | Endpoints de la aplicacion |
+| `/health` | Liveness probe |
+| `/ready` | Readiness probe + conexion BD |
+
+## Kong Ingress Controller
+
+Kong actua como API Gateway con configuracion optimizada para el challenge (1 replica, recursos limitados).
+
+### Plugins Configurados
+
+| Plugin | Configuracion |
+|--------|---------------|
+| **Rate Limiting** | 100 req/min, 1000 req/hora por IP |
+| **CORS** | Permite todos los origenes (configurable) |
+| **Request Size** | Maximo 10 MB por request |
+
+### Acceso
+
+```bash
+# Obtener IP externa de Kong
+kubectl -n kong get svc kong-kong-proxy
+
+# Ver logs de Kong
+kubectl -n kong logs -l app.kubernetes.io/name=kong
+```
+
+> Ver [docs/03-production-improvements.md](docs/03-production-improvements.md) para configuracion de HA y produccion.
 
 ## Acceso a ArgoCD
 
@@ -237,6 +255,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 - [01 - Bootstrap Guide](docs/01-bootstrap.md)
 - [02 - ArgoCD Guide](docs/02-argocd.md)
+- [03 - Production Improvements](docs/03-production-improvements.md)
 
 ## Roles IAM del Service Account
 

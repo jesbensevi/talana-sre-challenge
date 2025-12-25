@@ -5,6 +5,8 @@ resources:
   - deployment.yaml
   - service.yaml
   - external-secret.yaml
+  - ingress.yaml
+  - kong-plugins.yaml
 
 commonLabels:
   app.kubernetes.io/name: talana-backend

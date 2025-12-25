@@ -1,0 +1,72 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kong
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://charts.konghq.com
+    chart: kong
+    targetRevision: 2.33.3
+    helm:
+      valuesObject:
+        # Usar DB-less mode (declarativo)
+        env:
+          database: "off"
+
+        # Ingress Controller
+        ingressController:
+          enabled: true
+          installCRDs: false
+
+        # Proxy service como LoadBalancer
+        proxy:
+          enabled: true
+          type: LoadBalancer
+          http:
+            enabled: true
+            containerPort: 8000
+            servicePort: 80
+          tls:
+            enabled: false
+
+        # Admin API (solo interno)
+        admin:
+          enabled: true
+          type: ClusterIP
+          http:
+            enabled: true
+
+        # Recursos (optimizados para challenge)
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+        # Una replica para ambiente de desarrollo
+        replicaCount: 1
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kong
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
