@@ -204,6 +204,7 @@ ROLES=(
     "roles/editor"
     "roles/iam.serviceAccountTokenCreator"
     "roles/servicenetworking.networksAdmin"
+    "roles/secretmanager.admin"
 )
 
 for role in "${ROLES[@]}"; do
