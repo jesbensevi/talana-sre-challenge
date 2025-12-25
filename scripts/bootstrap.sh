@@ -203,6 +203,7 @@ log_info "Assigning roles to Service Account..."
 ROLES=(
     "roles/editor"
     "roles/iam.serviceAccountTokenCreator"
+    "roles/iam.serviceAccountAdmin"
     "roles/servicenetworking.networksAdmin"
     "roles/secretmanager.admin"
     "roles/container.admin"
