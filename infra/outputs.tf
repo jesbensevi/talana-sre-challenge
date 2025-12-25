@@ -76,11 +76,6 @@ output "db_user" {
 # Secret Manager Outputs
 # -----------------------------------------------------------------------------
 
-output "secret_db_password_id" {
-  description = "ID del secreto con la contraseña de DB"
-  value       = google_secret_manager_secret.db_password.secret_id
-}
-
 output "secret_db_connection_id" {
   description = "ID del secreto con el connection string"
   value       = google_secret_manager_secret.db_connection.secret_id
@@ -103,4 +98,13 @@ output "argocd_server_url_command" {
 output "argocd_initial_admin_password_command" {
   description = "Comando para obtener la contrasena inicial de admin"
   value       = "kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
+}
+
+
+# -----------------------------------------------------------------------------
+# External Secrets Outputs
+# -----------------------------------------------------------------------------
+output "external_secrets_gsa_email" {
+  description = "Email de la Service Account de External Secrets"
+  value       = google_service_account.external_secrets.email
 }
