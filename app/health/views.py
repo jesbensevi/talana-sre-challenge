@@ -1,9 +1,11 @@
 import time
+import socket
 import logging
 from django.http import JsonResponse
 from django.db import connection
 
 logger = logging.getLogger(__name__)
+POD_NAME = socket.gethostname()
 
 
 def index(request):
@@ -26,6 +28,7 @@ def healthcheck(request):
     """
     return JsonResponse({
         'status': 'healthy',
+        'pod': POD_NAME,
         'timestamp': time.time(),
     })
 
@@ -50,6 +53,7 @@ def db_check(request):
 
         return JsonResponse({
             'status': 'healthy',
+            'pod': POD_NAME,
             'database': 'connected',
             'latency_ms': round(latency_ms, 2),
             'postgres_version': pg_version.split(',')[0] if pg_version else 'unknown',
