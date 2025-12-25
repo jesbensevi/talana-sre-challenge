@@ -5,11 +5,14 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: backend=us-east1-docker.pkg.dev/talana-sre-challenge-jesben/talana-repo/talana-backend
+    argocd-image-updater.argoproj.io/backend.update-strategy: latest
 spec:
   project: default
 
   source:
-    repoURL: https://github.com/jesben/talana-sre-challenge.git
+    repoURL: https://github.com/jesbensevi/talana-sre-challenge.git
     targetRevision: main
     path: k8s/apps/talana-backend/overlays/dev
 
@@ -32,7 +35,6 @@ spec:
         factor: 2
         maxDuration: 3m
 
-  # Health checks
   ignoreDifferences:
     - group: apps
       kind: Deployment

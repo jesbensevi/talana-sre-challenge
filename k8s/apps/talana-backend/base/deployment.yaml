@@ -14,31 +14,48 @@ spec:
       labels:
         app: talana-backend
     spec:
-      serviceAccountName: talana-backend-sa
       containers:
         - name: talana-backend
-          image: talana-backend
+          image: gcr.io/talana-sre-challenge-jesben/talana-backend:latest
           ports:
             - containerPort: 8080
               protocol: TCP
           env:
-            - name: DJANGO_DEBUG
-              value: "false"
-            - name: DJANGO_ALLOWED_HOSTS
-              value: "*"
-          envFrom:
-            - secretRef:
-                name: talana-backend-secrets
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials-k8s
+                  key: host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials-k8s
+                  key: port
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials-k8s
+                  key: database
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials-k8s
+                  key: user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials-k8s
+                  key: password
           resources:
             requests:
               cpu: 100m
               memory: 128Mi
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 200m
+              memory: 256Mi
           livenessProbe:
             httpGet:
-              path: /healthcheck
+              path: /health
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
@@ -46,10 +63,10 @@ spec:
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /db-check
+              path: /ready
               port: 8080
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 5
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
             failureThreshold: 3
       restartPolicy: Always

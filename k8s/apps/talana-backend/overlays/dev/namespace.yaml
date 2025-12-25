@@ -4,3 +4,4 @@ metadata:
   name: talana-dev
   labels:
     environment: dev
+    app.kubernetes.io/part-of: talana
