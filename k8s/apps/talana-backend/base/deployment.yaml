@@ -40,7 +40,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: db-credentials-k8s
-                  key: user
+                  key: username
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
