@@ -92,12 +92,12 @@ output "secret_db_connection_id" {
 
 output "argocd_namespace" {
   description = "Namespace donde esta instalado ArgoCD"
-  value       = kubernetes_namespace.argocd.metadata[0].name
+  value       = helm_release.argocd.namespace
 }
 
-output "argocd_server_url" {
-  description = "URL del servidor ArgoCD"
-  value       = "http://${try(data.kubernetes_service.argocd_server.status[0].load_balancer[0].ingress[0].ip, "pending")}"
+output "argocd_server_url_command" {
+  description = "Comando para obtener la URL del servidor ArgoCD"
+  value       = "kubectl -n argocd get svc argocd-server -o jsonpath='{.status.loadBalancer.ingress[0].ip}'"
 }
 
 output "argocd_initial_admin_password_command" {
