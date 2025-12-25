@@ -1,0 +1,103 @@
+name: ArgoCD Bootstrap
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+          - apply
+          - delete
+          - status
+
+env:
+  GKE_CLUSTER: talana-gke-cluster
+  GKE_ZONE: us-east1-b
+
+jobs:
+  argocd-bootstrap:
+    name: ArgoCD Bootstrap
+    runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_ZONE }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Apply ArgoCD Apps
+        if: ${{ github.event.inputs.action == 'apply' }}
+        run: |
+          echo "Registering ArgoCD Applications..."
+          kubectl apply -k k8s/argocd/
+
+          echo ""
+          echo "Applications registered:"
+          kubectl get applications -n argocd
+
+          echo ""
+          echo "Waiting for sync..."
+          sleep 10
+          kubectl get applications -n argocd
+
+      - name: Delete ArgoCD Apps
+        if: ${{ github.event.inputs.action == 'delete' }}
+        run: |
+          echo "Removing ArgoCD Applications..."
+          kubectl delete -k k8s/argocd/ --ignore-not-found
+
+          echo ""
+          echo "Applications removed"
+
+      - name: Show Status
+        if: ${{ github.event.inputs.action == 'status' }}
+        run: |
+          echo "ArgoCD Applications Status:"
+          echo "=============================="
+          kubectl get applications -n argocd -o wide
+
+          echo ""
+          echo "External Secrets Operator:"
+          echo "=============================="
+          kubectl get pods -n external-secrets 2>/dev/null || echo "Namespace not found"
+
+          echo ""
+          echo "ClusterSecretStore:"
+          echo "======================"
+          kubectl get clustersecretstore 2>/dev/null || echo "No ClusterSecretStore found"
+
+          echo ""
+          echo "Talana Backend (dev):"
+          echo "========================"
+          kubectl get pods -n talana-dev 2>/dev/null || echo "Namespace not found"
+          kubectl get svc -n talana-dev 2>/dev/null || echo ""
+
+      - name: Summary
+        run: |
+          echo "### ArgoCD Bootstrap - ${{ github.event.inputs.action }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Cluster:** ${{ env.GKE_CLUSTER }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** ${{ github.event.inputs.action }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Applications:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          kubectl get applications -n argocd 2>/dev/null || echo "No applications found"
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
