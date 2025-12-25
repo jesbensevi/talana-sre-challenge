@@ -76,11 +76,6 @@ output "db_user" {
 # Secret Manager Outputs
 # -----------------------------------------------------------------------------
 
-output "secret_db_password_id" {
-  description = "ID del secreto con la contraseña de DB"
-  value       = google_secret_manager_secret.db_password.secret_id
-}
-
 output "secret_db_connection_id" {
   description = "ID del secreto con el connection string"
   value       = google_secret_manager_secret.db_connection.secret_id
