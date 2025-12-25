@@ -8,10 +8,19 @@ metadata:
 spec:
   project: default
 
+  # Usar Helm directamente desde el chart oficial
   source:
-    repoURL: https://github.com/jesbensevi/talana-sre-challenge.git
-    targetRevision: main
-    path: k8s/infra/external-secrets
+    repoURL: https://charts.external-secrets.io
+    chart: external-secrets
+    targetRevision: 0.9.13
+    helm:
+      valuesObject:
+        installCRDs: true
+        serviceAccount:
+          create: true
+          name: external-secrets-sa
+          annotations:
+            iam.gke.io/gcp-service-account: external-secrets-sa@talana-sre-challenge-jesben.iam.gserviceaccount.com
 
   destination:
     server: https://kubernetes.default.svc
@@ -21,7 +30,6 @@ spec:
     automated:
       prune: true
       selfHeal: true
-      allowEmpty: false
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
