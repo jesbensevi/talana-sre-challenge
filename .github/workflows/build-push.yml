@@ -114,6 +114,6 @@ jobs:
           else
             git commit -m "chore(k8s): update image tag to ${GITHUB_SHA::7}
 
-            🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+           GitHub Actions"
             git push
           fi
