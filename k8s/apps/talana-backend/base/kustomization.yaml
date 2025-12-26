@@ -7,8 +7,3 @@ resources:
   - external-secret.yaml
   - ingress.yaml
   - kong-plugins.yaml
-
-commonLabels:
-  app.kubernetes.io/name: talana-backend
-  app.kubernetes.io/component: backend
-  app.kubernetes.io/part-of: talana
