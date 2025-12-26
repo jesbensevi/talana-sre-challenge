@@ -10,7 +10,7 @@ resources:
 images:
   - name: gcr.io/talana-sre-challenge-jesben/talana-backend
     newName: us-east1-docker.pkg.dev/talana-sre-challenge-jesben/talana-repo/talana-backend
-    newTag: 0cb6d30
+    newTag: 48aa9ea
 
 patches:
   - path: patch-replicas.yaml
