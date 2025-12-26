@@ -12,5 +12,7 @@ patches:
   - path: patch-resources.yaml
   - path: patch-image.yaml
 
-commonLabels:
-  environment: dev
+labels:
+  - pairs:
+      environment: dev
+    includeSelectors: false
