@@ -74,15 +74,14 @@ spec:
 
   strategy:
     canary:
-      canaryService: talana-backend-canary
-      stableService: talana-backend-stable
-      trafficRouting:
-        plugins:
-          argoproj-labs/kong:
-            ingress: talana-backend
+      # Canary based on replica scaling (without traffic routing)
+      # The canary replicas receive traffic based on Kubernetes service load balancing
       steps:
-        - setWeight: 10
+        - setCanaryScale:
+            replicas: 1
         - pause: {duration: 1m}
+        - setCanaryScale:
+            matchTrafficWeight: true
         - setWeight: 50
-        - pause: {duration: 5m}
+        - pause: {duration: 2m}
         - setWeight: 100
