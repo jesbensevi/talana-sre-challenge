@@ -89,18 +89,18 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update image tag in patch-image.yaml
+      - name: Update image tag in kustomization.yaml
         run: |
           cd k8s/apps/talana-backend/overlays/dev
 
           # Get short SHA
           SHORT_SHA=${GITHUB_SHA::7}
 
-          # Update the image in patch-image.yaml (for Argo Rollouts)
-          sed -i "s|image:.*talana-backend:.*|image: us-east1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/talana-repo/talana-backend:${SHORT_SHA}|g" patch-image.yaml
+          # Update the image in kustomization.yaml (JSON patch for Argo Rollouts)
+          sed -i "s|talana-backend:.*|talana-backend:${SHORT_SHA}|g" kustomization.yaml
 
           echo "Updated image tag to: ${SHORT_SHA}"
-          cat patch-image.yaml
+          grep -A5 "containers/0/image" kustomization.yaml
 
       - name: Commit and push
         run: |
