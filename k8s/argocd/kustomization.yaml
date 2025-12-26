@@ -4,5 +4,6 @@ kind: Kustomization
 resources:
   - infra.yaml
   - cluster-secret-store.yaml
+  - argo-rollouts.yaml
   - kong.yaml
   - dev-env.yaml

@@ -39,6 +39,91 @@ affinity:
           topologyKey: kubernetes.io/hostname
 ```
 
+## Consolidacion de Load Balancers
+
+### Configuracion Actual (Challenge)
+- 2 Load Balancers L4 separados (~$36/mes):
+  - Kong API Gateway (trafico de aplicacion)
+  - ArgoCD UI (panel de administracion)
+
+### Configuracion Recomendada (Produccion)
+
+Usar un solo Load Balancer con Kong como unico punto de entrada, ruteando por subdominios:
+
+```yaml
+# k8s/apps/argocd-ingress/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-ingress
+  namespace: argocd
+  annotations:
+    konghq.com/strip-path: "false"
+    konghq.com/protocols: "https"
+spec:
+  ingressClassName: kong
+  tls:
+    - hosts:
+        - argocd.example.com
+      secretName: argocd-tls
+  rules:
+    - host: argocd.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 80
+---
+# k8s/apps/talana-backend/base/ingress.yaml (actualizado)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: talana-backend
+  annotations:
+    konghq.com/plugins: rate-limit-backend
+spec:
+  ingressClassName: kong
+  tls:
+    - hosts:
+        - api.example.com
+      secretName: api-tls
+  rules:
+    - host: api.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: talana-backend
+                port:
+                  number: 80
+```
+
+**Pasos para migrar:**
+
+1. Cambiar ArgoCD Service de `LoadBalancer` a `ClusterIP`:
+   ```yaml
+   # En k8s/argocd/argocd-values.yaml o via Terraform
+   server:
+     service:
+       type: ClusterIP
+   ```
+
+2. Crear Ingress para ArgoCD a traves de Kong
+
+3. Configurar DNS:
+   - `api.example.com` → IP de Kong
+   - `argocd.example.com` → IP de Kong
+
+4. Configurar TLS con cert-manager
+
+**Ahorro:** ~$18/mes (1 LB menos)
+
 ## GKE Cluster
 
 ### Configuracion Actual

@@ -64,6 +64,7 @@ graph TD
 | IaC | Terraform 1.6+ |
 | Container Orchestration | GKE (Google Kubernetes Engine) |
 | GitOps | ArgoCD |
+| Deployments | Argo Rollouts (Canary) |
 | CI/CD | GitHub Actions + Workload Identity Federation |
 | API Gateway | Kong Ingress Controller |
 | Secrets | External Secrets Operator + GCP Secret Manager |
@@ -106,7 +107,10 @@ talana-sre-challenge/
 │   └── bootstrap.sh          # Script de setup inicial
 └── docs/
     ├── 01-bootstrap.md
-    └── 02-argocd.md
+    ├── 02-argocd.md
+    ├── 03-production-improvements.md
+    ├── 04-kong.md
+    └── 05-canary-deployments.md
 ```
 
 ## Quick Start
@@ -256,6 +260,8 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 - [01 - Bootstrap Guide](docs/01-bootstrap.md)
 - [02 - ArgoCD Guide](docs/02-argocd.md)
 - [03 - Production Improvements](docs/03-production-improvements.md)
+- [04 - Kong API Gateway](docs/04-kong.md)
+- [05 - Canary Deployments](docs/05-canary-deployments.md)
 
 ## Roles IAM del Service Account
 
@@ -275,6 +281,11 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 - VPC con subnet privada (10.10.0.0/24)
 - Cloud NAT para salida a internet
 - Private Service Connection para Cloud SQL
+- **2 Load Balancers L4** (configuracion actual para el challenge):
+  - Kong API Gateway (trafico de aplicacion)
+  - ArgoCD UI (panel de administracion)
+
+> Ver [docs/03-production-improvements.md](docs/03-production-improvements.md) para consolidar en un solo LB.
 
 ### Compute
 - GKE Cluster privado (2 nodos e2-standard-2)
