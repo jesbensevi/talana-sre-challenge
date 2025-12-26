@@ -5,5 +5,6 @@ resources:
   - rollout.yaml
   - services.yaml
   - external-secret.yaml
-  - ingress.yaml
+  - gateway.yaml
+  - httproute.yaml
   - kong-plugins.yaml

@@ -74,10 +74,17 @@ spec:
 
   strategy:
     canary:
-      # Canary with pause steps for gradual rollout
-      # setWeight controls replica ratio (e.g., 20% = 1 canary out of 5 total replicas)
+      canaryService: talana-backend-canary
+      stableService: talana-backend-stable
+      trafficRouting:
+        plugins:
+          argoproj-labs/gatewayAPI:
+            httpRoute: talana-backend
+            namespace: talana-dev
       steps:
-        - setWeight: 20
+        - setWeight: 10
+        - pause: {duration: 1m}
+        - setWeight: 30
         - pause: {duration: 1m}
         - setWeight: 50
         - pause: {duration: 2m}

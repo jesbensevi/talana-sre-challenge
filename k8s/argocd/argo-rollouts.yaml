@@ -27,6 +27,9 @@ spec:
             limits:
               cpu: 100m
               memory: 128Mi
+          trafficRouterPlugins:
+            - name: "argoproj-labs/gatewayAPI"
+              location: "https://github.com/argoproj-labs/rollouts-plugin-trafficrouter-gatewayapi/releases/download/v0.4.0/gatewayapi-plugin-linux-amd64"
 
   destination:
     server: https://kubernetes.default.svc

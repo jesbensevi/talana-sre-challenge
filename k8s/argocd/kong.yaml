@@ -13,17 +13,14 @@ spec:
     chart: kong
     targetRevision: 2.33.3
     helm:
-      valuesObject:
-        # Usar DB-less mode (declarativo)
+      values: |
         env:
           database: "off"
-
-        # Ingress Controller
         ingressController:
           enabled: true
           installCRDs: false
-
-        # Proxy service como LoadBalancer
+          env:
+            feature_gates: GatewayAlpha=true
         proxy:
           enabled: true
           type: LoadBalancer
@@ -33,15 +30,11 @@ spec:
             servicePort: 80
           tls:
             enabled: false
-
-        # Admin API (solo interno)
         admin:
           enabled: true
           type: ClusterIP
           http:
             enabled: true
-
-        # Recursos (optimizados para challenge)
         resources:
           requests:
             cpu: 50m
@@ -49,8 +42,6 @@ spec:
           limits:
             cpu: 200m
             memory: 256Mi
-
-        # Una replica para ambiente de desarrollo
         replicaCount: 1
 
   destination:
