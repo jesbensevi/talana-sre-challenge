@@ -110,7 +110,8 @@ talana-sre-challenge/
     ├── 02-argocd.md
     ├── 03-production-improvements.md
     ├── 04-kong.md
-    └── 05-canary-deployments.md
+    ├── 05-canary-deployments.md
+    └── 06-gitops-architecture.md
 ```
 
 ## Quick Start
@@ -262,6 +263,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 - [03 - Production Improvements](docs/03-production-improvements.md)
 - [04 - Kong API Gateway](docs/04-kong.md)
 - [05 - Canary Deployments](docs/05-canary-deployments.md)
+- [06 - GitOps Architecture](docs/06-gitops-architecture.md)
 
 ## Roles IAM del Service Account
 
