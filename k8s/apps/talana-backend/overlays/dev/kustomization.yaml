@@ -7,14 +7,10 @@ resources:
   - ../../base
   - namespace.yaml
 
-images:
-  - name: gcr.io/talana-sre-challenge-jesben/talana-backend
-    newName: us-east1-docker.pkg.dev/talana-sre-challenge-jesben/talana-repo/talana-backend
-    newTag: 0b15d15
-
 patches:
   - path: patch-replicas.yaml
   - path: patch-resources.yaml
+  - path: patch-image.yaml
 
 commonLabels:
   environment: dev

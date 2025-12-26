@@ -1,0 +1,10 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: talana-backend
+spec:
+  template:
+    spec:
+      containers:
+        - name: talana-backend
+          image: us-east1-docker.pkg.dev/talana-sre-challenge-jesben/talana-repo/talana-backend:latest
