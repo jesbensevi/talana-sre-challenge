@@ -261,7 +261,6 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 - [03 - Production Improvements](docs/03-production-improvements.md)
 - [04 - Kong API Gateway](docs/04-kong.md)
 - [05 - GitOps Architecture](docs/05-gitops-architecture.md)
-- [06 - Canary Deployments](docs/06-canary-deployments.md)
 
 ## Roles IAM del Service Account
 
