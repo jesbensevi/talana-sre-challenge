@@ -84,5 +84,5 @@ spec:
         - setWeight: 10
         - pause: {duration: 1m}
         - setWeight: 50
-        - pause: {duration: 1m}
+        - pause: {duration: 5m}
         - setWeight: 100
