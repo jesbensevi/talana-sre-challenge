@@ -1,11 +1,12 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: talana-backend
   labels:
     app: talana-backend
 spec:
-  replicas: 1
+  replicas: 2
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: talana-backend
@@ -16,7 +17,7 @@ spec:
     spec:
       containers:
         - name: talana-backend
-          image: gcr.io/talana-sre-challenge-jesben/talana-backend:latest
+          image: us-east1-docker.pkg.dev/talana-sre-challenge-jesben/talana-repo/talana-backend:latest
           ports:
             - containerPort: 8080
               protocol: TCP
@@ -70,3 +71,17 @@ spec:
             timeoutSeconds: 3
             failureThreshold: 3
       restartPolicy: Always
+
+  strategy:
+    canary:
+      canaryService: talana-backend-canary
+      stableService: talana-backend-stable
+      steps:
+        - setWeight: 10
+        - pause: {duration: 1m}
+        - setWeight: 25
+        - pause: {duration: 2m}
+        - setWeight: 50
+        - pause: {duration: 2m}
+        - setWeight: 75
+        - pause: {duration: 2m}

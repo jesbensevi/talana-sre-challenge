@@ -14,27 +14,27 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: talana-backend
+                name: talana-backend-stable
                 port:
                   number: 80
           - path: /health
             pathType: Exact
             backend:
               service:
-                name: talana-backend
+                name: talana-backend-stable
                 port:
                   number: 80
           - path: /ready
             pathType: Exact
             backend:
               service:
-                name: talana-backend
+                name: talana-backend-stable
                 port:
                   number: 80
           - path: /
             pathType: Exact
             backend:
               service:
-                name: talana-backend
+                name: talana-backend-stable
                 port:
                   number: 80
