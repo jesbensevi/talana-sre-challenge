@@ -37,14 +37,13 @@ flowchart TB
             GitOps Controller"]
 
             subgraph Apps ["Aplicaciones"]
-                ROLLOUTS["Argo Rollouts"]
                 ESO["External Secrets
                 Operator"]
                 KONG["Kong
                 Ingress"]
                 CSS["ClusterSecretStore"]
                 BACKEND["talana-backend
-                (Rollout)"]
+                (Deployment)"]
             end
         end
 
@@ -65,7 +64,6 @@ flowchart TB
     BOOT -->|"kubectl apply"| ARGO
 
     %% ArgoCD syncs
-    ARGO -->|"sync helm"| ROLLOUTS
     ARGO -->|"sync helm"| ESO
     ARGO -->|"sync helm"| KONG
     ARGO -->|"sync kustomize"| CSS
@@ -87,7 +85,7 @@ flowchart TB
     class APP,INFRA,K8S github
     class BUILD,TF,BOOT actions
     class AR,SQL,SM gcp
-    class ARGO,ROLLOUTS,ESO,KONG,CSS,BACKEND k8s
+    class ARGO,ESO,KONG,CSS,BACKEND k8s
 ```
 
 ## Flujo por Tipo de Cambio
@@ -109,10 +107,9 @@ sequenceDiagram
     GA->>AR: Push image:sha
     GA->>GH: Update image tag in kustomization
     GH->>Argo: Webhook/Poll detect change
-    Argo->>K8s: Sync Rollout
-    K8s->>K8s: Canary deployment starts
-    Note over K8s: 20% traffic → canary
-    Note over K8s: Wait for promotion
+    Argo->>K8s: Sync Deployment
+    K8s->>K8s: Rolling update
+    Note over K8s: Pods updated
 ```
 
 ### 2. Cambios en Infraestructura (infra/)
@@ -154,7 +151,6 @@ sequenceDiagram
 flowchart LR
     subgraph ArgoCD ["ArgoCD (namespace: argocd)"]
         direction TB
-        A1["argo-rollouts"]
         A2["external-secrets"]
         A3["kong"]
         A4["cluster-secret-store"]
@@ -163,7 +159,6 @@ flowchart LR
 
     subgraph Sources ["Fuentes"]
         direction TB
-        H1["Helm: argoproj.github.io"]
         H2["Helm: external-secrets.io"]
         H3["Helm: charts.konghq.com"]
         G1["Git: k8s/infra/cluster-secret-store"]
@@ -172,14 +167,12 @@ flowchart LR
 
     subgraph Namespaces ["Namespaces Destino"]
         direction TB
-        N1["argo-rollouts"]
         N2["external-secrets"]
         N3["kong"]
         N4["external-secrets"]
         N5["talana-dev"]
     end
 
-    H1 --> A1 --> N1
     H2 --> A2 --> N2
     H3 --> A3 --> N3
     G1 --> A4 --> N4
@@ -205,7 +198,6 @@ talana-sre-challenge/
 │
 └── k8s/                     ──→ ArgoCD (auto-sync)
     ├── argocd/              ──→ Bootstrap inicial
-    │   ├── argo-rollouts.yaml
     │   ├── kong.yaml
     │   ├── infra.yaml
     │   ├── cluster-secret-store.yaml
@@ -222,23 +214,19 @@ talana-sre-challenge/
         └── cluster-secret-store/
 ```
 
-## Canary Deployment Flow
+## Deployment Flow
 
 ```mermaid
 flowchart LR
-    subgraph Rollout ["Argo Rollout"]
+    subgraph Deployment ["Kubernetes Deployment"]
         direction TB
-        R1["Version N
-        (Stable)"]
-        R2["Version N+1
-        (Canary)"]
+        R1["Pod 1"]
+        R2["Pod 2"]
     end
 
-    subgraph Services ["Services"]
+    subgraph Service ["Service"]
         S1["talana-backend
-        (stable)"]
-        S2["talana-backend-canary
-        (canary)"]
+        ClusterIP"]
     end
 
     subgraph Kong ["Kong Ingress"]
@@ -246,13 +234,12 @@ flowchart LR
         35.237.234.196"]
     end
 
-    LB -->|"80%"| S1
-    LB -->|"20%"| S2
-    S1 --> R1
-    S2 --> R2
+    LB -->|"HTTP"| S1
+    S1 -->|"Round Robin"| R1
+    S1 -->|"Round Robin"| R2
 
-    style R1 fill:#28a745,color:#fff
-    style R2 fill:#ffc107,color:#000
+    style R1 fill:#326CE5,color:#fff
+    style R2 fill:#326CE5,color:#fff
 ```
 
 ## Resumen de Automatizaciones

@@ -285,19 +285,8 @@ config:
    - Promocion manual a produccion
 
 2. **Canary/Blue-Green Deployments**
-   ```yaml
-   # Argo Rollouts para despliegues progresivos
-   apiVersion: argoproj.io/v1alpha1
-   kind: Rollout
-   spec:
-     strategy:
-       canary:
-         steps:
-           - setWeight: 20
-           - pause: {duration: 5m}
-           - setWeight: 50
-           - pause: {duration: 10m}
-   ```
+   - Considerar Argo Rollouts para despliegues progresivos
+   - Permite rollback automatico basado en metricas
 
 3. **Image Scanning**
    - Integrar Trivy o Snyk en el pipeline

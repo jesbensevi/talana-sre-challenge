@@ -64,7 +64,6 @@ graph TD
 | IaC | Terraform 1.6+ |
 | Container Orchestration | GKE (Google Kubernetes Engine) |
 | GitOps | ArgoCD |
-| Deployments | Argo Rollouts (Canary) |
 | CI/CD | GitHub Actions + Workload Identity Federation |
 | API Gateway | Kong Ingress Controller |
 | Secrets | External Secrets Operator + GCP Secret Manager |
@@ -110,8 +109,7 @@ talana-sre-challenge/
     ├── 02-argocd.md
     ├── 03-production-improvements.md
     ├── 04-kong.md
-    ├── 05-canary-deployments.md
-    └── 06-gitops-architecture.md
+    └── 05-gitops-architecture.md
 ```
 
 ## Quick Start
@@ -262,8 +260,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 - [02 - ArgoCD Guide](docs/02-argocd.md)
 - [03 - Production Improvements](docs/03-production-improvements.md)
 - [04 - Kong API Gateway](docs/04-kong.md)
-- [05 - Canary Deployments](docs/05-canary-deployments.md)
-- [06 - GitOps Architecture](docs/06-gitops-architecture.md)
+- [05 - GitOps Architecture](docs/05-gitops-architecture.md)
 
 ## Roles IAM del Service Account
 
