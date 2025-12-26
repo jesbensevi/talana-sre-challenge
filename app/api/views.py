@@ -6,14 +6,14 @@ from django.db import connection
 
 logger = logging.getLogger(__name__)
 POD_NAME = socket.gethostname()
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 
 
 def index(request):
     """Root endpoint with API info."""
     return JsonResponse({
         'service': 'talana-backend',
-        'version': '1.0.0',
+        'version': VERSION,
         'endpoints': {
             '/': 'API info',
             '/health': 'Liveness probe',
