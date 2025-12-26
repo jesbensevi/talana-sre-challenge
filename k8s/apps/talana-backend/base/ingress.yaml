@@ -5,6 +5,7 @@ metadata:
   annotations:
     konghq.com/strip-path: "false"
     konghq.com/plugins: rate-limit-backend
+    # Argo Rollouts maneja estas anotaciones automáticamente para traffic splitting
 spec:
   ingressClassName: kong
   rules:
@@ -14,27 +15,27 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: talana-backend
+                name: talana-backend-stable
                 port:
                   number: 80
           - path: /health
             pathType: Exact
             backend:
               service:
-                name: talana-backend
+                name: talana-backend-stable
                 port:
                   number: 80
           - path: /ready
             pathType: Exact
             backend:
               service:
-                name: talana-backend
+                name: talana-backend-stable
                 port:
                   number: 80
           - path: /
             pathType: Exact
             backend:
               service:
-                name: talana-backend
+                name: talana-backend-stable
                 port:
                   number: 80
