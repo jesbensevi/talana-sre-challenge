@@ -37,13 +37,15 @@ flowchart TB
             GitOps Controller"]
 
             subgraph Apps ["Aplicaciones"]
+                GWAPI["Gateway API CRDs"]
+                ROLLOUTS["Argo Rollouts"]
                 ESO["External Secrets
                 Operator"]
                 KONG["Kong
-                Ingress"]
+                Gateway API"]
                 CSS["ClusterSecretStore"]
                 BACKEND["talana-backend
-                (Deployment)"]
+                (Rollout + Canary)"]
             end
         end
 
@@ -64,6 +66,8 @@ flowchart TB
     BOOT -->|"kubectl apply"| ARGO
 
     %% ArgoCD syncs
+    ARGO -->|"sync"| GWAPI
+    ARGO -->|"sync helm"| ROLLOUTS
     ARGO -->|"sync helm"| ESO
     ARGO -->|"sync helm"| KONG
     ARGO -->|"sync kustomize"| CSS
@@ -74,7 +78,8 @@ flowchart TB
     ESO -.->|"fetch secrets"| SM
     CSS -.->|"auth"| SM
     BACKEND -.->|"connect"| SQL
-    KONG -->|"route traffic"| BACKEND
+    KONG -->|"HTTPRoute"| BACKEND
+    ROLLOUTS -->|"manage"| BACKEND
 
     %% Styling
     classDef github fill:#24292e,color:#fff
@@ -85,7 +90,7 @@ flowchart TB
     class APP,INFRA,K8S github
     class BUILD,TF,BOOT actions
     class AR,SQL,SM gcp
-    class ARGO,ESO,KONG,CSS,BACKEND k8s
+    class ARGO,GWAPI,ROLLOUTS,ESO,KONG,CSS,BACKEND k8s
 ```
 
 ## Flujo por Tipo de Cambio
@@ -99,6 +104,7 @@ sequenceDiagram
     participant GA as GitHub Actions
     participant AR as Artifact Registry
     participant Argo as ArgoCD
+    participant Rollout as Argo Rollouts
     participant K8s as Kubernetes
 
     Dev->>GH: git push (app/)
@@ -106,10 +112,12 @@ sequenceDiagram
     GA->>GA: Build Docker image
     GA->>AR: Push image:sha
     GA->>GH: Update image tag in kustomization
-    GH->>Argo: Webhook/Poll detect change
-    Argo->>K8s: Sync Deployment
-    K8s->>K8s: Rolling update
-    Note over K8s: Pods updated
+    GH->>Argo: Webhook detect change
+    Argo->>K8s: Sync Rollout
+    Rollout->>Rollout: Start Canary
+    Note over Rollout: 10% → 30% → 50% → 100%
+    Rollout->>K8s: Update HTTPRoute weights
+    Note over K8s: Progressive traffic shift
 ```
 
 ### 2. Cambios en Infraestructura (infra/)
@@ -139,7 +147,7 @@ sequenceDiagram
     participant K8s as Kubernetes
 
     Dev->>GH: git push (k8s/)
-    GH->>Argo: Webhook/Poll detect change
+    GH->>Argo: Webhook detect change
     Argo->>Argo: Compare Git vs Cluster
     Argo->>K8s: Auto-sync changes
     Note over K8s: Resources updated
@@ -151,14 +159,18 @@ sequenceDiagram
 flowchart LR
     subgraph ArgoCD ["ArgoCD (namespace: argocd)"]
         direction TB
-        A2["external-secrets"]
-        A3["kong"]
-        A4["cluster-secret-store"]
-        A5["talana-backend-dev"]
+        A1["gateway-api-crds"]
+        A2["argo-rollouts"]
+        A3["external-secrets"]
+        A4["kong"]
+        A5["cluster-secret-store"]
+        A6["talana-backend-dev"]
     end
 
     subgraph Sources ["Fuentes"]
         direction TB
+        G0["Git: kubernetes-sigs/gateway-api"]
+        H1["Helm: argoproj.github.io"]
         H2["Helm: external-secrets.io"]
         H3["Helm: charts.konghq.com"]
         G1["Git: k8s/infra/cluster-secret-store"]
@@ -167,16 +179,20 @@ flowchart LR
 
     subgraph Namespaces ["Namespaces Destino"]
         direction TB
+        N0["default"]
+        N1["argo-rollouts"]
         N2["external-secrets"]
         N3["kong"]
         N4["external-secrets"]
         N5["talana-dev"]
     end
 
-    H2 --> A2 --> N2
-    H3 --> A3 --> N3
-    G1 --> A4 --> N4
-    G2 --> A5 --> N5
+    G0 --> A1 --> N0
+    H1 --> A2 --> N1
+    H2 --> A3 --> N2
+    H3 --> A4 --> N3
+    G1 --> A5 --> N4
+    G2 --> A6 --> N5
 ```
 
 ## Estructura de Directorios
@@ -198,49 +214,77 @@ talana-sre-challenge/
 │
 └── k8s/                     ──→ ArgoCD (auto-sync)
     ├── argocd/              ──→ Bootstrap inicial
+    │   ├── kustomization.yaml
+    │   ├── gateway-api-crds.yaml
+    │   ├── argo-rollouts.yaml
+    │   ├── infra.yaml           (external-secrets)
     │   ├── kong.yaml
-    │   ├── infra.yaml
     │   ├── cluster-secret-store.yaml
     │   └── dev-env.yaml
     │
     ├── apps/
     │   └── talana-backend/
-    │       ├── base/        ──→ Recursos comunes
+    │       ├── base/
+    │       │   ├── rollout.yaml
+    │       │   ├── services.yaml
+    │       │   ├── external-secret.yaml
+    │       │   ├── gateway.yaml
+    │       │   ├── httproute.yaml
+    │       │   └── kong-plugins.yaml
     │       └── overlays/
-    │           └── dev/     ──→ Configuracion dev
+    │           └── dev/
     │
     └── infra/
-        ├── external-secrets/
         └── cluster-secret-store/
 ```
 
-## Deployment Flow
+## Deployment Flow con Canary
 
 ```mermaid
-flowchart LR
-    subgraph Deployment ["Kubernetes Deployment"]
+flowchart TB
+    subgraph Rollout ["Argo Rollout"]
         direction TB
-        R1["Pod 1"]
-        R2["Pod 2"]
+        STABLE["Stable ReplicaSet
+        (version N)"]
+        CANARY["Canary ReplicaSet
+        (version N+1)"]
     end
 
-    subgraph Service ["Service"]
-        S1["talana-backend
-        ClusterIP"]
+    subgraph Services ["Services"]
+        S1["talana-backend-stable"]
+        S2["talana-backend-canary"]
     end
 
-    subgraph Kong ["Kong Ingress"]
+    subgraph Gateway ["Kong Gateway API"]
+        HR["HTTPRoute
+        weights: 70/30"]
+        GW["Gateway
+        kong-gateway"]
         LB["Load Balancer
         35.237.234.196"]
     end
 
-    LB -->|"HTTP"| S1
-    S1 -->|"Round Robin"| R1
-    S1 -->|"Round Robin"| R2
+    STABLE --> S1
+    CANARY --> S2
+    S1 --> HR
+    S2 --> HR
+    HR --> GW
+    GW --> LB
 
-    style R1 fill:#326CE5,color:#fff
-    style R2 fill:#326CE5,color:#fff
+    style STABLE fill:#326CE5,color:#fff
+    style CANARY fill:#FFA500,color:#fff
 ```
+
+## Canary Steps
+
+El Rollout progresa automaticamente por estos pasos:
+
+| Step | Peso Canary | Pausa | Descripcion |
+|------|-------------|-------|-------------|
+| 1 | 10% | 1 min | Validacion inicial |
+| 2 | 30% | 1 min | Incremento gradual |
+| 3 | 50% | 2 min | Mitad del trafico |
+| 4 | 100% | - | Promocion completa |
 
 ## Webhook para Sync Instantaneo
 
@@ -258,13 +302,11 @@ GitHub Push → Webhook → ArgoCD → Sync (segundos)
 | Content type | `application/json` |
 | Events | Just the push event |
 
-El webhook notifica a todas las aplicaciones de ArgoCD. Solo se sincronizan las apps cuyos paths fueron modificados.
-
 ## Resumen de Automatizaciones
 
 | Trigger | Pipeline | Accion |
 |---------|----------|--------|
-| Push a `app/**` | build-push.yml | Build image → Push → Update tag |
+| Push a `app/**` | build-push.yml | Build image → Push → Update tag → Canary |
 | Push a `infra/**` | terraform.yml | Plan → Apply |
 | Push a `k8s/**` | ArgoCD | Auto-sync a cluster |
 | Manual | argocd-bootstrap.yml | Aplicar apps ArgoCD |

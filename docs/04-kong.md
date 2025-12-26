@@ -1,21 +1,14 @@
-# Kong Ingress Controller
+# Kong Gateway API Controller
 
-Kong es el API Gateway que maneja todo el trafico entrante hacia la aplicacion.
-
-## Arquitectura
-
-```
-Internet → GCP Load Balancer → Kong Proxy → Backend Services
-                                   ↓
-                            Rate Limiting
-                            CORS Headers
-                            Request Validation
-```
+Kong es el API Gateway que maneja todo el trafico entrante hacia la aplicacion, utilizando **Gateway API** para el routing de trafico.
 
 ## Configuracion Actual
 
 | Parametro | Valor |
 |-----------|-------|
+| Chart Version | 3.0.1 |
+| Kong Version | 3.9 |
+| KIC Version | 3.5 |
 | Replicas | 1 |
 | CPU Request | 50m |
 | CPU Limit | 200m |
@@ -23,11 +16,90 @@ Internet → GCP Load Balancer → Kong Proxy → Backend Services
 | Memory Limit | 256Mi |
 | Modo | DB-less (declarativo) |
 
-## Plugins Habilitados
+## Gateway API
+
+Usamos Gateway API en lugar de Ingress para tener control preciso del trafico (necesario para canary deployments).
+
+### GatewayClass
+
+Define el controlador que manejara los Gateways:
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kong
+  annotations:
+    konghq.com/gatewayclass-unmanaged: "true"
+spec:
+  controllerName: konghq.com/kic-gateway-controller
+```
+
+### Gateway
+
+Crea el listener HTTP:
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: kong-gateway
+spec:
+  gatewayClassName: kong
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Same
+```
+
+### HTTPRoute
+
+Define las rutas, plugins y distribucion de trafico:
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: talana-backend
+spec:
+  parentRefs:
+    - name: kong-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:                              # Plugins conectados
+        - type: ExtensionRef
+          extensionRef:
+            group: configuration.konghq.com
+            kind: KongPlugin
+            name: rate-limit-backend
+        - type: ExtensionRef
+          extensionRef:
+            group: configuration.konghq.com
+            kind: KongPlugin
+            name: cors-backend
+        - type: ExtensionRef
+          extensionRef:
+            group: configuration.konghq.com
+            kind: KongPlugin
+            name: request-size-limit
+      backendRefs:                          # Traffic splitting
+        - name: talana-backend-stable
+          port: 80
+          weight: 100    # Trafico a version estable
+        - name: talana-backend-canary
+          port: 80
+          weight: 0      # Trafico a version canary
+```
+
+## Plugins Disponibles
 
 ### 1. Rate Limiting
-
-Limita el numero de requests por cliente.
 
 ```yaml
 apiVersion: configuration.konghq.com/v1
@@ -36,24 +108,14 @@ metadata:
   name: rate-limit-backend
 plugin: rate-limiting
 config:
-  minute: 100      # 100 requests por minuto
-  hour: 1000       # 1000 requests por hora
-  policy: local    # Contador local (no distribuido)
+  minute: 100000
+  hour: 10000000
+  policy: local
   fault_tolerant: true
   hide_client_headers: false
 ```
 
-**Headers de respuesta:**
-```
-X-RateLimit-Limit-Minute: 100
-X-RateLimit-Remaining-Minute: 98
-X-RateLimit-Limit-Hour: 1000
-X-RateLimit-Remaining-Hour: 997
-```
-
 ### 2. CORS
-
-Permite requests cross-origin.
 
 ```yaml
 apiVersion: configuration.konghq.com/v1
@@ -63,7 +125,7 @@ metadata:
 plugin: cors
 config:
   origins:
-    - "*"              # Permite todos los origenes
+    - "*"
   methods:
     - GET
     - POST
@@ -74,16 +136,11 @@ config:
     - Accept
     - Authorization
     - Content-Type
-  exposed_headers:
-    - X-RateLimit-Limit-Minute
-    - X-RateLimit-Remaining-Minute
   credentials: false
-  max_age: 3600        # Cache preflight por 1 hora
+  max_age: 3600
 ```
 
 ### 3. Request Size Limiting
-
-Limita el tamano maximo de requests.
 
 ```yaml
 apiVersion: configuration.konghq.com/v1
@@ -92,53 +149,8 @@ metadata:
   name: request-size-limit
 plugin: request-size-limiting
 config:
-  allowed_payload_size: 10    # 10 MB maximo
+  allowed_payload_size: 10
   size_unit: megabytes
-```
-
-## Ingress Configuration
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: talana-backend
-  annotations:
-    konghq.com/strip-path: "false"
-    konghq.com/plugins: rate-limit-backend
-spec:
-  ingressClassName: kong
-  rules:
-    - http:
-        paths:
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: talana-backend
-                port:
-                  number: 80
-          - path: /health
-            pathType: Exact
-            backend:
-              service:
-                name: talana-backend
-                port:
-                  number: 80
-          - path: /ready
-            pathType: Exact
-            backend:
-              service:
-                name: talana-backend
-                port:
-                  number: 80
-          - path: /
-            pathType: Exact
-            backend:
-              service:
-                name: talana-backend
-                port:
-                  number: 80
 ```
 
 ## Comandos Utiles
@@ -156,6 +168,22 @@ kubectl -n kong get svc
 kubectl -n kong get svc kong-kong-proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 ```
 
+### Ver recursos Gateway API
+
+```bash
+# GatewayClass
+kubectl get gatewayclass
+
+# Gateway
+kubectl get gateway -A
+
+# HTTPRoutes
+kubectl get httproute -A
+
+# Ver pesos actuales del HTTPRoute
+kubectl get httproute talana-backend -n talana-dev -o jsonpath='{.spec.rules[0].backendRefs}' | jq .
+```
+
 ### Ver logs
 
 ```bash
@@ -166,20 +194,7 @@ kubectl -n kong logs -l app.kubernetes.io/name=kong -c proxy
 kubectl -n kong logs -l app.kubernetes.io/name=kong -c ingress-controller
 
 # Follow logs
-kubectl -n kong logs -f -l app.kubernetes.io/name=kong
-```
-
-### Ver configuracion activa
-
-```bash
-# Listar plugins
-kubectl get kongplugins -A
-
-# Listar ingresses
-kubectl get ingress -A
-
-# Describir ingress
-kubectl describe ingress talana-backend -n talana-dev
+kubectl -n kong logs -f -l app.kubernetes.io/name=kong -c ingress-controller
 ```
 
 ### Probar endpoints
@@ -190,37 +205,16 @@ KONG_IP=$(kubectl -n kong get svc kong-kong-proxy -o jsonpath='{.status.loadBala
 # Root
 curl http://$KONG_IP/
 
-# Health (muestra pod name)
+# Health
 curl http://$KONG_IP/health
 
 # Ready (incluye DB check)
 curl http://$KONG_IP/ready
 
-# Ver headers de rate limiting
-curl -I http://$KONG_IP/health
-```
-
-### Test de balanceo de carga
-
-```bash
-# Ejecutar multiples requests para ver diferentes pods
-for i in {1..10}; do
-  curl -s http://$KONG_IP/health | jq -r '.pod'
-done
-```
-
-## Aplicar plugins a un Ingress
-
-Los plugins se aplican mediante annotations:
-
-```yaml
-metadata:
-  annotations:
-    # Un solo plugin
-    konghq.com/plugins: rate-limit-backend
-
-    # Multiples plugins (separados por coma)
-    konghq.com/plugins: rate-limit-backend,cors-backend,request-size-limit
+# Ver distribucion de trafico (durante canary)
+for i in {1..20}; do
+  curl -s http://$KONG_IP/health | jq -r '.version'
+done | sort | uniq -c
 ```
 
 ## Troubleshooting
@@ -238,29 +232,37 @@ kubectl -n kong get events --sort-by='.lastTimestamp'
 kubectl -n kong rollout restart deployment kong-kong
 ```
 
-### 502 Bad Gateway
+### Error 400 en logs de KIC
 
-El backend no esta disponible:
+Si ves errores como:
+```
+could not unmarshal config error: json: cannot unmarshal object into Go struct field ConfigError.flattened_errors
+```
+
+Esto es incompatibilidad de versiones. Asegurate de usar Kong chart >= 3.0.1
+
+### HTTPRoute no funciona
+
+```bash
+# Verificar que Gateway este programado
+kubectl get gateway -n talana-dev
+
+# Verificar status del HTTPRoute
+kubectl describe httproute talana-backend -n talana-dev
+
+# Verificar que los servicios existan
+kubectl get svc -n talana-dev
+```
+
+### 502 Bad Gateway
 
 ```bash
 # Verificar pods del backend
 kubectl -n talana-dev get pods
 
-# Verificar service
-kubectl -n talana-dev get svc talana-backend
-
 # Verificar endpoints
-kubectl -n talana-dev get endpoints talana-backend
-```
-
-### Rate limit muy restrictivo
-
-Ajustar valores en `kong-plugins.yaml`:
-
-```yaml
-config:
-  minute: 200    # Aumentar limite
-  hour: 5000
+kubectl -n talana-dev get endpoints talana-backend-stable
+kubectl -n talana-dev get endpoints talana-backend-canary
 ```
 
 ## Archivos Relacionados
@@ -268,9 +270,11 @@ config:
 | Archivo | Descripcion |
 |---------|-------------|
 | `k8s/argocd/kong.yaml` | ArgoCD Application para Kong |
-| `k8s/apps/talana-backend/base/ingress.yaml` | Ingress rules |
+| `k8s/argocd/gateway-api-crds.yaml` | CRDs de Gateway API |
+| `k8s/apps/talana-backend/base/gateway.yaml` | GatewayClass y Gateway |
+| `k8s/apps/talana-backend/base/httproute.yaml` | HTTPRoute para routing |
 | `k8s/apps/talana-backend/base/kong-plugins.yaml` | Plugin configurations |
 
 ---
 
-Ver [03-production-improvements.md](03-production-improvements.md) para configuracion de produccion (HA, TLS, rate limiting distribuido).
+Ver [06-canary-deployments.md](06-canary-deployments.md) para configuracion de deployments canary con Argo Rollouts.
