@@ -77,8 +77,9 @@ spec:
       canaryService: talana-backend-canary
       stableService: talana-backend-stable
       trafficRouting:
-        kong:
-          ingress: talana-backend
+        plugins:
+          argoproj-labs/kong:
+            ingress: talana-backend
       steps:
         - setWeight: 10
         - pause: {duration: 1m}

@@ -4,8 +4,8 @@ metadata:
   name: rate-limit-backend
 plugin: rate-limiting
 config:
-  minute: 100
-  hour: 1000
+  minute: 100000
+  hour: 10000000
   policy: local
   fault_tolerant: true
   hide_client_headers: false
