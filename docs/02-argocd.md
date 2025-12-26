@@ -195,6 +195,47 @@ set {
 }
 ```
 
+## Webhook para Sync Instantaneo
+
+Por defecto, ArgoCD hace polling al repositorio cada 3 minutos. Para obtener sync instantaneo, configuramos un webhook en GitHub.
+
+### Configuracion
+
+1. En GitHub: `Settings > Webhooks > Add webhook`
+2. Configurar:
+
+| Campo | Valor |
+|-------|-------|
+| **Payload URL** | `http://<ARGOCD_IP>/api/webhook` |
+| **Content type** | `application/json` |
+| **Secret** | *(vacio)* |
+| **SSL verification** | Disable (HTTP) |
+| **Events** | Just the push event |
+
+### Como funciona
+
+```
+┌─────────────┐     push      ┌─────────────┐    webhook    ┌─────────────┐
+│   GitHub    │──────────────▶│   Webhook   │──────────────▶│   ArgoCD    │
+│             │               │             │               │             │
+└─────────────┘               └─────────────┘               └──────┬──────┘
+                                                                   │
+                                                                   ▼
+                                                            ┌─────────────┐
+                                                            │  Sync Apps  │
+                                                            │ (afectadas) │
+                                                            └─────────────┘
+```
+
+- El webhook notifica a **todas** las aplicaciones de ArgoCD
+- ArgoCD analiza que archivos cambiaron
+- Solo sincroniza las apps cuyos paths fueron modificados
+- Resultado: sync en **segundos** en lugar de 3 minutos
+
+### Verificar webhook
+
+En GitHub, revisa `Settings > Webhooks > Recent Deliveries` para ver si las entregas son exitosas (codigo 200).
+
 ## Troubleshooting
 
 ### Error: "Unable to connect to the server"

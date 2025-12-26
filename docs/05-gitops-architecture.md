@@ -242,6 +242,24 @@ flowchart LR
     style R2 fill:#326CE5,color:#fff
 ```
 
+## Webhook para Sync Instantaneo
+
+ArgoCD esta configurado con un **webhook de GitHub** para sync instantaneo en lugar del polling por defecto (3 minutos).
+
+```
+GitHub Push → Webhook → ArgoCD → Sync (segundos)
+```
+
+**Configuracion:** GitHub repo → Settings → Webhooks
+
+| Campo | Valor |
+|-------|-------|
+| Payload URL | `http://<ARGOCD_IP>/api/webhook` |
+| Content type | `application/json` |
+| Events | Just the push event |
+
+El webhook notifica a todas las aplicaciones de ArgoCD. Solo se sincronizan las apps cuyos paths fueron modificados.
+
 ## Resumen de Automatizaciones
 
 | Trigger | Pipeline | Accion |
