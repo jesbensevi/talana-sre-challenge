@@ -1,12 +1,11 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: talana-backend
   labels:
     app: talana-backend
 spec:
-  replicas: 2
-  revisionHistoryLimit: 3
+  replicas: 1
   selector:
     matchLabels:
       app: talana-backend
@@ -71,37 +70,3 @@ spec:
             timeoutSeconds: 3
             failureThreshold: 3
       restartPolicy: Always
-
-  # Estrategia Canary
-  strategy:
-    canary:
-      # Services para traffic splitting
-      canaryService: talana-backend-canary
-      stableService: talana-backend-stable
-
-      # Pasos del canary deployment
-      steps:
-        # Paso 1: 10% del tráfico al canary
-        - setWeight: 10
-        - pause: {duration: 1m}
-
-        # Paso 2: 25% del tráfico
-        - setWeight: 25
-        - pause: {duration: 2m}
-
-        # Paso 3: 50% del tráfico
-        - setWeight: 50
-        - pause: {duration: 2m}
-
-        # Paso 4: 75% del tráfico
-        - setWeight: 75
-        - pause: {duration: 2m}
-
-        # Paso 5: 100% - promoción completa (automático)
-
-      # Traffic routing con Kong
-      trafficRouting:
-        kong:
-          ingress: talana-backend
-          stableServiceName: talana-backend-stable
-          canaryServiceName: talana-backend-canary
