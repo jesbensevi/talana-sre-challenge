@@ -17,7 +17,7 @@ patches:
         value: 2
       - op: replace
         path: /spec/template/spec/containers/0/image
-        value: us-east1-docker.pkg.dev/talana-sre-challenge-jesben/talana-repo/talana-backend:6c6a448
+        value: us-east1-docker.pkg.dev/talana-sre-challenge-jesben/talana-repo/talana-backend:8fc0580
       - op: replace
         path: /spec/template/spec/containers/0/resources
         value:
