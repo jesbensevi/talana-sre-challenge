@@ -40,3 +40,7 @@ spec:
       kind: Rollout
       jsonPointers:
         - /spec/replicas
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      jqPathExpressions:
+        - .spec.rules[].backendRefs[].weight
