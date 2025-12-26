@@ -83,8 +83,8 @@ talana-sre-challenge/
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   ├── manage.py
-│   ├── talana/               # Proyecto Django
-│   └── health/               # App de healthchecks
+│   ├── talana/               # Proyecto Django (config)
+│   └── api/                  # App de endpoints
 ├── infra/                    # Terraform (IaC)
 │   ├── provider.tf
 │   ├── vpc.tf
