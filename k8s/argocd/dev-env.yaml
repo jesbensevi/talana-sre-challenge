@@ -36,7 +36,7 @@ spec:
         maxDuration: 3m
 
   ignoreDifferences:
-    - group: apps
-      kind: Deployment
+    - group: argoproj.io
+      kind: Rollout
       jsonPointers:
         - /spec/replicas
