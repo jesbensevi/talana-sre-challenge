@@ -184,6 +184,42 @@ for i in {1..20}; do
 done | sort | uniq -c
 ```
 
+### Ejemplo Real de Canary en Progreso
+
+Durante un canary deployment de v1.0.9 → v1.0.10, asi se ve la distribucion de trafico:
+
+```bash
+# Step 1: 10% canary
+$ for i in {1..20}; do curl -s http://35.237.234.196/health | jq -r '.version'; done | sort | uniq -c
+   2 1.0.10
+  18 1.0.9
+
+# Step 3: 50% canary
+$ for i in {1..20}; do curl -s http://35.237.234.196/health | jq -r '.version'; done | sort | uniq -c
+  10 1.0.10
+  10 1.0.9
+
+# Step 4: 100% canary (promocion completa)
+$ for i in {1..20}; do curl -s http://35.237.234.196/health | jq -r '.version'; done | sort | uniq -c
+  20 1.0.10
+```
+
+```mermaid
+xychart-beta
+    title "Distribucion de Trafico Durante Canary"
+    x-axis ["10%", "30%", "50%", "100%"]
+    y-axis "Requests %" 0 --> 100
+    bar [10, 30, 50, 100]
+    line [90, 70, 50, 0]
+```
+
+| Step | Canary (nueva) | Stable (anterior) | Pausa |
+|------|----------------|-------------------|-------|
+| 1 | 10% | 90% | 1 min |
+| 2 | 30% | 70% | 1 min |
+| 3 | 50% | 50% | 2 min |
+| 4 | 100% | 0% | - |
+
 ### Monitorear progreso en tiempo real
 
 ```bash
