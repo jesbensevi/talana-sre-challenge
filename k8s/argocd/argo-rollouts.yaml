@@ -18,8 +18,9 @@ spec:
           enabled: true
           service:
             type: ClusterIP
-          extraArgs:
-            - --root-path=/rollouts
+          extraEnv:
+            - name: ARGO_ROLLOUTS_ROOT_PATH
+              value: /rollouts
         controller:
           replicas: 1
           resources:
