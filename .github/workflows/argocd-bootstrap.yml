@@ -1,6 +1,11 @@
 name: ArgoCD Bootstrap
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'k8s/argocd/**'
   workflow_dispatch:
     inputs:
       action:
@@ -44,7 +49,7 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Apply ArgoCD Apps
-        if: ${{ github.event.inputs.action == 'apply' }}
+        if: ${{ github.event_name == 'push' || github.event.inputs.action == 'apply' }}
         run: |
           echo "Registering ArgoCD Applications..."
           kubectl apply -k k8s/argocd/
@@ -92,10 +97,12 @@ jobs:
 
       - name: Summary
         run: |
-          echo "### ArgoCD Bootstrap - ${{ github.event.inputs.action }}" >> $GITHUB_STEP_SUMMARY
+          ACTION="${{ github.event.inputs.action || 'apply' }}"
+          echo "### ArgoCD Bootstrap - ${ACTION}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Cluster:** ${{ env.GKE_CLUSTER }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Action:** ${{ github.event.inputs.action }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** ${ACTION}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "#### Applications:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
