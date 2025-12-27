@@ -8,4 +8,3 @@ resources:
   - cluster-secret-store.yaml
   - kong.yaml
   - dev-env.yaml
-  - argo-rollouts-dashboard.yaml
