@@ -18,6 +18,8 @@ spec:
           enabled: true
           service:
             type: ClusterIP
+          extraArgs:
+            - --root-path=/rollouts
         controller:
           replicas: 1
           resources:
