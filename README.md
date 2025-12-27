@@ -64,8 +64,9 @@ graph TD
 | IaC | Terraform 1.6+ |
 | Container Orchestration | GKE (Google Kubernetes Engine) |
 | GitOps | ArgoCD |
+| Progressive Delivery | Argo Rollouts (Canary Deployments) |
 | CI/CD | GitHub Actions + Workload Identity Federation |
-| API Gateway | Kong Ingress Controller |
+| API Gateway | Kong + Gateway API |
 | Secrets | External Secrets Operator + GCP Secret Manager |
 | Base de Datos | Cloud SQL PostgreSQL 15 |
 | Aplicacion | Django 5.0 + Gunicorn |
@@ -180,30 +181,39 @@ Este paso registra las aplicaciones en ArgoCD para que comience el despliegue Gi
 
 ## Flujo CI/CD
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        CAMBIOS EN CODIGO                        │
-└─────────────────────────────────────────────────────────────────┘
-                               │
-          ┌────────────────────┼────────────────────┐
-          │                    │                    │
-          ▼                    ▼                    ▼
-    ┌──────────┐         ┌──────────┐         ┌──────────┐
-    │ infra/** │         │  app/**  │         │  k8s/**  │
-    └────┬─────┘         └────┬─────┘         └────┬─────┘
-         │                    │                    │
-         ▼                    ▼                    ▼
-┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
-│ terraform.yml   │  │ build-push.yml  │  │     ArgoCD      │
-│                 │  │                 │  │   (auto-sync)   │
-│ Plan → Apply    │  │ Build → Push    │  │                 │
-└────────┬────────┘  └────────┬────────┘  └────────┬────────┘
-         │                    │                    │
-         ▼                    ▼                    ▼
-┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
-│   GCP Infra     │  │Artifact Registry│  │   GKE Cluster   │
-│   Updated       │  │  Image Pushed   │  │    Deployed     │
-└─────────────────┘  └─────────────────┘  └─────────────────┘
+```mermaid
+flowchart TB
+    subgraph Trigger ["Cambios en Codigo"]
+        INFRA["infra/**"]
+        APP["app/**"]
+        K8S["k8s/**"]
+        K8SARGO["k8s/argocd/**"]
+    end
+
+    subgraph Actions ["GitHub Actions"]
+        TF["terraform.yml<br/>Plan → Apply"]
+        BUILD["build-push.yml<br/>Build → Push"]
+        BOOT["argocd-bootstrap.yml<br/>kubectl apply"]
+    end
+
+    subgraph ArgoCD ["ArgoCD"]
+        SYNC["Auto-sync"]
+    end
+
+    subgraph Results ["Resultados"]
+        GCP["GCP Infra<br/>Updated"]
+        AR["Artifact Registry<br/>Image Pushed"]
+        GKE["GKE Cluster<br/>Deployed"]
+    end
+
+    INFRA --> TF --> GCP
+    APP --> BUILD --> AR
+    K8S --> SYNC --> GKE
+    K8SARGO --> BOOT --> SYNC
+
+    style Trigger fill:#24292e,color:#fff
+    style Actions fill:#2088FF,color:#fff
+    style ArgoCD fill:#EF7B4D,color:#fff
 ```
 
 ## Endpoints de la Aplicacion
@@ -254,13 +264,24 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 - **Usuario**: `admin`
 - **Password**: (obtenido con el comando anterior)
 
+## URLs de Acceso
+
+| Servicio | URL | Descripcion |
+|----------|-----|-------------|
+| ArgoCD UI | http://34.26.252.189 | Panel GitOps |
+| Kong API Gateway | http://35.237.234.196 | Trafico de aplicacion |
+| Argo Rollouts Dashboard | http://34.73.161.251:3100 | Visualizacion canary deployments |
+
 ## Documentacion Adicional
 
+- [00 - Setup Guide (Desplegar desde cero)](docs/00-setup-guide.md)
 - [01 - Bootstrap Guide](docs/01-bootstrap.md)
 - [02 - ArgoCD Guide](docs/02-argocd.md)
 - [03 - Production Improvements](docs/03-production-improvements.md)
 - [04 - Kong API Gateway](docs/04-kong.md)
 - [05 - GitOps Architecture](docs/05-gitops-architecture.md)
+- [06 - Canary Deployments](docs/06-canary-deployments.md)
+- [07 - Billing y Costos](docs/07-billing.md)
 
 ## Roles IAM del Service Account
 
@@ -280,9 +301,10 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 - VPC con subnet privada (10.10.0.0/24)
 - Cloud NAT para salida a internet
 - Private Service Connection para Cloud SQL
-- **2 Load Balancers L4** (configuracion actual para el challenge):
+- **3 Load Balancers L4** (configuracion actual para el challenge):
   - Kong API Gateway (trafico de aplicacion)
   - ArgoCD UI (panel de administracion)
+  - Argo Rollouts Dashboard (visualizacion de canary deployments)
 
 > Ver [docs/03-production-improvements.md](docs/03-production-improvements.md) para consolidar en un solo LB.
 

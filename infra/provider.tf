@@ -10,7 +10,6 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.6"
     }
-    # Agregamos Helm y Kubernetes
     helm = {
       source  = "hashicorp/helm"
       version = "~> 2.12"

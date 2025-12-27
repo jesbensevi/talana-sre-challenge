@@ -4,27 +4,29 @@ ArgoCD es una herramienta declarativa de GitOps para Kubernetes que permite mant
 
 ## Arquitectura
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        GitHub Repo                          │
-│                    (k8s/ manifiestos)                       │
-└─────────────────────────────┬───────────────────────────────┘
-                              │ sync
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                         ArgoCD                              │
-│                   (namespace: argocd)                       │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   Server    │  │ Repo Server │  │ Application Ctrl    │  │
-│  │ (UI + API)  │  │  (Git sync) │  │ (reconciliation)    │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-└─────────────────────────────┬───────────────────────────────┘
-                              │ deploy
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      GKE Cluster                            │
-│              (talana-gke-cluster)                           │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph GitHub ["GitHub Repository"]
+        MANIFESTS["k8s/ manifiestos"]
+    end
+
+    subgraph ArgoCD ["ArgoCD (namespace: argocd)"]
+        direction LR
+        SERVER["Server<br/>(UI + API)"]
+        REPO["Repo Server<br/>(Git sync)"]
+        CTRL["Application Controller<br/>(reconciliation)"]
+    end
+
+    subgraph GKE ["GKE Cluster"]
+        CLUSTER["talana-gke-cluster"]
+    end
+
+    MANIFESTS -->|"sync"| ArgoCD
+    ArgoCD -->|"deploy"| CLUSTER
+
+    style GitHub fill:#24292e,color:#fff
+    style ArgoCD fill:#EF7B4D,color:#fff
+    style GKE fill:#4285F4,color:#fff
 ```
 
 ## Instalacion
@@ -214,17 +216,14 @@ Por defecto, ArgoCD hace polling al repositorio cada 3 minutos. Para obtener syn
 
 ### Como funciona
 
-```
-┌─────────────┐     push      ┌─────────────┐    webhook    ┌─────────────┐
-│   GitHub    │──────────────▶│   Webhook   │──────────────▶│   ArgoCD    │
-│             │               │             │               │             │
-└─────────────┘               └─────────────┘               └──────┬──────┘
-                                                                   │
-                                                                   ▼
-                                                            ┌─────────────┐
-                                                            │  Sync Apps  │
-                                                            │ (afectadas) │
-                                                            └─────────────┘
+```mermaid
+flowchart LR
+    GH["GitHub"] -->|"push"| WH["Webhook"]
+    WH -->|"POST /api/webhook"| ARGO["ArgoCD"]
+    ARGO -->|"sync"| APPS["Apps afectadas"]
+
+    style GH fill:#24292e,color:#fff
+    style ARGO fill:#EF7B4D,color:#fff
 ```
 
 - El webhook notifica a **todas** las aplicaciones de ArgoCD

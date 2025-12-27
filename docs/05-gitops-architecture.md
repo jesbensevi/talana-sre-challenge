@@ -309,10 +309,14 @@ GitHub Push → Webhook → ArgoCD → Sync (segundos)
 | Push a `app/**` | build-push.yml | Build image → Push → Update tag → Canary |
 | Push a `infra/**` | terraform.yml | Plan → Apply |
 | Push a `k8s/**` | ArgoCD | Auto-sync a cluster |
-| Manual | argocd-bootstrap.yml | Aplicar apps ArgoCD |
+| Push a `k8s/argocd/**` | argocd-bootstrap.yml | Aplicar apps ArgoCD |
+| Manual | argocd-bootstrap.yml | apply/delete/status |
 
 ## Enlaces Utiles
 
-- **ArgoCD UI**: http://34.26.252.189
-- **Kong API**: http://35.237.234.196
-- **Artifact Registry**: us-east1-docker.pkg.dev/talana-sre-challenge-jesben/talana-repo
+| Servicio | URL | Puerto |
+|----------|-----|--------|
+| ArgoCD UI | http://34.26.252.189 | 80/443 |
+| Kong API Gateway | http://35.237.234.196 | 80 |
+| Argo Rollouts Dashboard | http://34.73.161.251:3100 | 3100 |
+| Artifact Registry | us-east1-docker.pkg.dev/talana-sre-challenge-jesben/talana-repo | - |

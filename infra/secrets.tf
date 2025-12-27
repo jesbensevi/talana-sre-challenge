@@ -1,5 +1,3 @@
-# ELIMINA el bloque resource "random_password" de aquí porque ya está en database.tf
-
 resource "google_secret_manager_secret" "db_connection" {
   secret_id = "talana-db-connection"
   project   = var.project_id

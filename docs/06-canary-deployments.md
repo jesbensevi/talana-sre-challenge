@@ -231,13 +231,40 @@ kubectl argo rollouts retry rollout talana-backend -n talana-dev
 
 ## Dashboard de Argo Rollouts
 
-Argo Rollouts incluye un dashboard web para visualizar el estado:
+Argo Rollouts incluye un dashboard web para visualizar el estado de los rollouts en tiempo real.
+
+### Acceso al Dashboard
+
+El dashboard esta expuesto via LoadBalancer:
+
+| Servicio | URL |
+|----------|-----|
+| Argo Rollouts Dashboard | http://34.73.161.251:3100 |
+
+### Alternativa: Port Forward (desarrollo local)
 
 ```bash
-# Acceder al dashboard (port-forward)
-kubectl argo rollouts dashboard -n argo-rollouts
+# Acceder al dashboard via port-forward
+kubectl port-forward svc/argo-rollouts-dashboard 3100:3100 -n argo-rollouts
 
 # Abrir en navegador: http://localhost:3100
+```
+
+### Vista del Dashboard
+
+```mermaid
+flowchart LR
+    subgraph Dashboard ["Argo Rollouts Dashboard"]
+        direction TB
+        REV1["Revision 12<br/>stable<br/>2 pods"]
+        REV2["Revision 13<br/>canary<br/>1 pod"]
+        PROGRESS["Progress: 30%<br/>Step 2 of 4"]
+    end
+
+    USER["Usuario"] --> |"http://34.73.161.251:3100"| Dashboard
+
+    style REV1 fill:#326CE5,color:#fff
+    style REV2 fill:#FFA500,color:#fff
 ```
 
 ## Configuracion en ArgoCD
