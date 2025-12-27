@@ -17,7 +17,8 @@ spec:
         dashboard:
           enabled: true
           service:
-            type: ClusterIP
+            type: LoadBalancer
+            port: 3100
         controller:
           replicas: 1
           resources:
