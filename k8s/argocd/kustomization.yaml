@@ -4,8 +4,8 @@ kind: Kustomization
 resources:
   - gateway-api-crds.yaml
   - argo-rollouts.yaml
-  - argo-rollouts-dashboard.yaml
   - infra.yaml
   - cluster-secret-store.yaml
   - kong.yaml
   - dev-env.yaml
+  - argo-rollouts-dashboard.yaml

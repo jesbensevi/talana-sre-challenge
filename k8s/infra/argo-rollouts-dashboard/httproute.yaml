@@ -11,7 +11,7 @@ spec:
     - matches:
         - path:
             type: PathPrefix
-            value: /rollouts
+            value: /argo-rollouts
       backendRefs:
         - name: argo-rollouts-dashboard
           port: 3100
