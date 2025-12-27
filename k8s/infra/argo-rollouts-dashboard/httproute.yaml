@@ -3,8 +3,6 @@ kind: HTTPRoute
 metadata:
   name: argo-rollouts-dashboard
   namespace: argo-rollouts
-  annotations:
-    konghq.com/strip-path: "true"
 spec:
   parentRefs:
     - name: kong-gateway
@@ -13,7 +11,7 @@ spec:
     - matches:
         - path:
             type: PathPrefix
-            value: /argo-rollouts
+            value: /rollouts
       backendRefs:
         - name: argo-rollouts-dashboard
           port: 3100
