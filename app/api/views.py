@@ -6,7 +6,7 @@ from django.db import connection
 
 logger = logging.getLogger(__name__)
 POD_NAME = socket.gethostname()
-VERSION = '1.0.10'
+VERSION = '2.0.0'
 
 
 def index(request):
